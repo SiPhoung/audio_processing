@@ -11,8 +11,27 @@ namespace fs = std::filesystem;
 struct AudioData {
     std::vector<float> samples;
     size_t currentFrame = 0;
-    int channels = 2;// チャネル数 (デフォルトはstereo)
+    int channels = 2; // 出力チャネル数 (stereoにダウンミックス)
 };
+
+// マルチチャネルオーディオをステレオにダウンミックス
+std::vector<float> downmixToStereo(const std::vector<float>& samples, int inputChannels, int outputChannels)
+{
+    size_t totalFrames = samples.size() / inputChannels;
+    std::vector<float> downmixedSamples(totalFrames * outputChannels, 0.0f);
+
+    for (size_t frame = 0; frame < totalFrames; ++frame)
+    {
+        for (int inChannel = 0; inChannel < inputChannels; ++inChannel)
+        {
+            // すべての入力チャネルを左と右のチャネルに均等にミックス
+            downmixedSamples[frame * outputChannels + 0] += samples[frame * inputChannels + inChannel] * (1.0f / inputChannels); // Left channel
+            downmixedSamples[frame * outputChannels + 1] += samples[frame * inputChannels + inChannel] * (1.0f / inputChannels); // Right channel
+        }
+    }
+
+    return downmixedSamples;
+}
 
 // (PaStreamCallback型)オーディオコールバック関数: サンプルデータをバッファにコピー
 static int audioCallback(const void* inputBuffer, void* outputBuffer,
@@ -44,7 +63,7 @@ static int audioCallback(const void* inputBuffer, void* outputBuffer,
 }
 
 // オーディオファイルを再生する関数
-void playAudioFile(const std::string& filePath)
+void playAudioFile(const std::string& filePath, const std::string fileName)
 {
     // オーディオファイルを開く
     SF_INFO sfInfo{};
@@ -60,11 +79,15 @@ void playAudioFile(const std::string& filePath)
     // AudioDataを初期化
     AudioData audioData;
     audioData.samples.resize(sfInfo.frames * sfInfo.channels);
-    audioData.channels = sfInfo.channels;
+    audioData.channels = 2; // 出力はステレオに固定
 
     // ファイルデータを読み込む
     sf_readf_float(sndFile, audioData.samples.data(), sfInfo.frames);
     sf_close(sndFile);
+
+    // マルチチャネルオーディオをステレオにダウンミックス
+    if (sfInfo.channels > 2)
+        audioData.samples = downmixToStereo(audioData.samples, sfInfo.channels, audioData.channels);
 
     // PortAudioを初期化
     PaError err = Pa_Initialize();
@@ -76,8 +99,8 @@ void playAudioFile(const std::string& filePath)
 
     // PortAudioストリームを開く
     PaStream* stream;
-    const unsigned long BUFFER_SIZE = 1024; // バッファサイズ
-    err = Pa_OpenDefaultStream(&stream, 0, sfInfo.channels, paFloat32, sfInfo.samplerate,
+    const unsigned long BUFFER_SIZE = 1024;
+    err = Pa_OpenDefaultStream(&stream, 0, audioData.channels, paFloat32, sfInfo.samplerate,
         BUFFER_SIZE, audioCallback, &audioData);
     if (err != paNoError)
     {
@@ -101,7 +124,7 @@ void playAudioFile(const std::string& filePath)
     // 再生が終了するまで待つ
     while (Pa_IsStreamActive(stream) == 1)
     {
-        Pa_Sleep(100); // 100ms待機
+        Pa_Sleep(100);
     }
 
     // クリーンアップ
@@ -109,7 +132,7 @@ void playAudioFile(const std::string& filePath)
     Pa_CloseStream(stream);
     Pa_Terminate();
 
-    std::cout << "再生終了: " << filePath << std::endl;
+    std::cout << "再生終了: " << fileName << std::endl;
 }
 
 int main()
@@ -136,7 +159,7 @@ int main()
             std::string fileName = entry.path().filename().string();
             std::cout << "再生開始: " << fileName << std::endl;
 
-            playAudioFile(filePath);
+            playAudioFile(filePath, fileName);
         }
     }
 
