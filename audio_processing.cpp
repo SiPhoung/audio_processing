@@ -63,7 +63,7 @@ static int audioCallback(const void* inputBuffer, void* outputBuffer,
 }
 
 // オーディオファイルを再生する関数
-void playAudioFile(const std::string& filePath, const std::string fileName)
+void playAudioFile(const std::string& filePath)
 {
     // オーディオファイルを開く
     SF_INFO sfInfo{};
@@ -83,7 +83,28 @@ void playAudioFile(const std::string& filePath, const std::string fileName)
 
     // ファイルデータを読み込む
     sf_readf_float(sndFile, audioData.samples.data(), sfInfo.frames);
-    sf_close(sndFile);
+    const int charSize = 256;
+    char artist[charSize];
+    char title[charSize];
+    if (sf_get_string(sndFile, SF_STR_TITLE))
+    {
+        strncpy(title, sf_get_string(sndFile, SF_STR_TITLE), charSize);
+        std::cout << "曲名: " << title << std::endl;
+    }
+    else
+    {
+        std::cout << "曲名: 不明" << title << std::endl;
+    }
+
+    if (sf_get_string(sndFile, SF_STR_ARTIST))
+    {
+        strncpy(artist, sf_get_string(sndFile, SF_STR_ARTIST), charSize);
+        std::cout << "アーティスト：　" << artist << std::endl;
+    }
+    else
+    {
+        std::cout << "アーティスト：　不明" << artist << std::endl;
+    }
 
     // マルチチャネルオーディオをステレオにダウンミックス
     if (sfInfo.channels > 2)
@@ -131,8 +152,9 @@ void playAudioFile(const std::string& filePath, const std::string fileName)
     Pa_StopStream(stream);
     Pa_CloseStream(stream);
     Pa_Terminate();
+    sf_close(sndFile);
 
-    std::cout << "再生終了: " << fileName << std::endl;
+    std::cout << "再生終了" << std::endl;
 }
 
 int main()
@@ -157,9 +179,9 @@ int main()
         {
             std::string filePath = entry.path().string();
             std::string fileName = entry.path().filename().string();
-            std::cout << "再生開始: " << fileName << std::endl;
+            std::cout << "再生開始" << std::endl;
 
-            playAudioFile(filePath, fileName);
+            playAudioFile(filePath);
         }
     }
 
