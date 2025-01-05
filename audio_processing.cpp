@@ -86,6 +86,7 @@ void playAudioFile(const std::string& filePath)
     const int charSize = 256;
     char artist[charSize];
     char title[charSize];
+    char album[charSize];
     if (sf_get_string(sndFile, SF_STR_TITLE))
     {
         strncpy(title, sf_get_string(sndFile, SF_STR_TITLE), charSize);
@@ -104,6 +105,16 @@ void playAudioFile(const std::string& filePath)
     else
     {
         std::cout << "アーティスト：　不明" << artist << std::endl;
+    }
+
+    if (sf_get_string(sndFile, SF_STR_ALBUM))
+    {
+        strncpy(album, sf_get_string(sndFile, SF_STR_ALBUM), charSize);
+        std::cout << "アルバム：　" << album << std::endl;
+    }
+    else
+    {
+        std::cout << "アルバム：　不明" << std::endl;
     }
 
     // マルチチャネルオーディオをステレオにダウンミックス
