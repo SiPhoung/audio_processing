@@ -86,12 +86,12 @@ void playAudioFile(const std::string& filePath)
                 std::cerr << "エラー: 認識できないファイル形式です。" << std::endl;
                 break;
 
-            case SF_ERR_SYSTEM:
-                std::cerr << "エラー: システムエラーが発生しました。" << std::endl;
-                break;
-
             case SF_ERR_MALFORMED_FILE:
                 std::cerr << "エラー: ファイルが破損しています。" << std::endl;
+                break;
+
+            case SF_ERR_SYSTEM:
+                std::cerr << "エラー: システムエラーが発生しました。" << std::endl;
                 break;
 
             default:
@@ -113,6 +113,7 @@ void playAudioFile(const std::string& filePath)
     char artist[charSize];
     char title[charSize];
     char album[charSize];
+
     if (sf_get_string(sndFile, SF_STR_TITLE))
     {
         strncpy(title, sf_get_string(sndFile, SF_STR_TITLE), charSize);
