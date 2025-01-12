@@ -58,7 +58,6 @@ static int audioCallback(const void* inputBuffer, void* outputBuffer,
         }
     }
 
-    // 再生が終了したかを判断
     return data->currentFrame < data->samples.size() ? paContinue : paComplete;
 }
 
@@ -70,9 +69,36 @@ void playAudioFile(const std::string& filePath)
     SNDFILE* sndFile = sf_open(filePath.c_str(), SFM_READ, &sfInfo);
     if (!sndFile)
     {
-        std::cerr << "ファイルを開けませんでした: "
-            << (sf_strerror(nullptr) ? sf_strerror(nullptr) : "不明なエラー")
-            << " (" << filePath << ")" << std::endl;
+        const char* errorMsg = sf_strerror(nullptr);
+        std::cerr << "ファイルを開けませんでした。 " << std::endl;
+
+        switch (sf_error(nullptr))
+        {
+        case 18:
+                std::cerr << "エラー: ファイルには実装されていない形式のデータが含まれています。" << std::endl;
+                break;
+
+            case SF_ERR_UNSUPPORTED_ENCODING:
+                std::cerr << "エラー: ファイルはサポートされていないエンコーディングを使用しています。" << std::endl;
+                break;
+
+            case SF_ERR_UNRECOGNISED_FORMAT:
+                std::cerr << "エラー: 認識できないファイル形式です。" << std::endl;
+                break;
+
+            case SF_ERR_SYSTEM:
+                std::cerr << "エラー: システムエラーが発生しました。" << std::endl;
+                break;
+
+            case SF_ERR_MALFORMED_FILE:
+                std::cerr << "エラー: ファイルが破損しています。" << std::endl;
+                break;
+
+            default:
+                std::cerr << "エラー: 不明なエラーが発生しました。" << std::endl;
+                break;
+        }
+
         return;
     }
 
@@ -80,7 +106,7 @@ void playAudioFile(const std::string& filePath)
     AudioData audioData;
     audioData.samples.resize(sfInfo.frames * sfInfo.channels);
     audioData.channels = 2; // 出力はステレオに固定
-
+    std::cout << sfInfo.samplerate << std::endl;
     // ファイルデータを読み込む
     sf_readf_float(sndFile, audioData.samples.data(), sfInfo.frames);
     const int charSize = 256;
@@ -94,7 +120,7 @@ void playAudioFile(const std::string& filePath)
     }
     else
     {
-        std::cout << "曲名: 不明" << title << std::endl;
+        std::cout << "曲名: 不明" << std::endl;
     }
 
     if (sf_get_string(sndFile, SF_STR_ARTIST))
@@ -104,7 +130,7 @@ void playAudioFile(const std::string& filePath)
     }
     else
     {
-        std::cout << "アーティスト：　不明" << artist << std::endl;
+        std::cout << "アーティスト：　不明" << std::endl;
     }
 
     if (sf_get_string(sndFile, SF_STR_ALBUM))
@@ -170,33 +196,49 @@ void playAudioFile(const std::string& filePath)
 
 int main()
 {
-    // オーディオファイルが保存されているフォルダー
-#ifndef Audio_DIR
-#error "Audio_DIRが定義されていません。ビルドシステムで定義してください。"
-#endif
-    std::string folderPath = std::string(Audio_DIR);
-
-    // フォルダーの存在を確認
-    if (!fs::exists(folderPath))
+    try
     {
-        std::cerr << "フォルダーが見つかりません: " << folderPath << std::endl;
+        std::string folderPath = std::string(Audio_DIR);
+
+        if (!fs::exists(folderPath))
+        {
+            std::cerr << "フォルダーが見つかりません: " << folderPath << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        size_t totalFiles = 0;
+        for (const auto& entry : fs::directory_iterator(folderPath)) {
+            if (entry.is_regular_file())
+                totalFiles++;
+        }
+
+        if (totalFiles == 0) 
+        {
+            std::cerr << "フォルダーで音声のファイルが存在しません。" << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        size_t currentFile = 0;
+        for (const auto& entry : fs::directory_iterator(folderPath))
+        {
+            if (entry.is_regular_file())
+            {
+                currentFile++;
+                std::cout << "再生開始 : " << currentFile << "\/" << totalFiles << std::endl;
+                std::string filePath = entry.path().string();
+                std::string fileName = entry.path().filename().string();
+
+                playAudioFile(filePath);
+            }
+        }
+
+        std::cout << "すべてのファイルの再生が完了しました。" << std::endl;
+
+        return EXIT_SUCCESS;
+    }
+    catch (const std::exception&)
+    {
+        std::cerr << "予期しないエラーが発生しました。" << std::endl;
         return EXIT_FAILURE;
     }
-
-    // フォルダー内のすべてのオーディオファイルを再生
-    for (const auto& entry : fs::directory_iterator(folderPath))
-    {
-        if (entry.is_regular_file())
-        {
-            std::string filePath = entry.path().string();
-            std::string fileName = entry.path().filename().string();
-            std::cout << "再生開始" << std::endl;
-
-            playAudioFile(filePath);
-        }
-    }
-
-    std::cout << "すべてのファイルの再生が完了しました。" << std::endl;
-
-    return EXIT_SUCCESS;
 }
