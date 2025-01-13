@@ -26,36 +26,6 @@ void getDuration(double duration)
         << std::setw(2) << std::setfill('0') << seconds << std::endl;
 }
 
-void displaySndFileError(int errnum)
-{
-    switch (errnum)
-    {
-        case 18:
-            std::cerr << "エラー: ファイルには実装されていない形式のデータが含まれています。" << std::endl;
-            break;
-
-        case SF_ERR_UNSUPPORTED_ENCODING:
-            std::cerr << "エラー: ファイルはサポートされていないエンコーディングを使用しています。" << std::endl;
-            break;
-
-        case SF_ERR_UNRECOGNISED_FORMAT:
-            std::cerr << "エラー: 認識できないファイル形式です。" << std::endl;
-            break;
-
-        case SF_ERR_MALFORMED_FILE:
-            std::cerr << "エラー: ファイルが破損しています。" << std::endl;
-            break;
-
-        case SF_ERR_SYSTEM:
-            std::cerr << "エラー: システムエラーが発生しました。" << std::endl;
-            break;
-
-        default:
-            std::cerr << "エラー: 不明なエラーが発生しました。" << std::endl;
-        break;
-    }
-}
-
 void displayAudioDetails(SNDFILE* sndFile)
 {
     const int charSize = 256;
@@ -149,8 +119,7 @@ void playAudioFile(const std::string& filePath)
     SNDFILE* sndFile = sf_open(filePath.c_str(), SFM_READ, &sfInfo);
     if (!sndFile)
     {
-        std::cerr << "ファイルを開けませんでした。" << std::endl;
-        displaySndFileError(sf_error(nullptr));
+        std::cerr << "ファイルを開けませんでした。\nファイル形式がサポートされていない、ファイル拡張子が間違っている、またはファイルが破損している可能性があります。" << std::endl;
         return;
     }
 
