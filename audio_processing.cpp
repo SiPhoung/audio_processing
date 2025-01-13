@@ -14,6 +14,17 @@ struct AudioData {
     int channels = 2; // 出力チャネル数 (stereoにダウンミックス)
 };
 
+void getDuration(double duration) {
+    int hours = static_cast<int>(duration) / 3600;
+    int minutes = (static_cast<int>(duration) % 3600) / 60;
+    int seconds = static_cast<int>(duration) % 60;
+
+    std::cout << "再生時間： "
+        << std::setw(2) << std::setfill('0') << hours << ":"
+        << std::setw(2) << std::setfill('0') << minutes << ":"
+        << std::setw(2) << std::setfill('0') << seconds << std::endl;
+}
+
 // マルチチャネルオーディオをステレオにダウンミックス
 std::vector<float> downmixToStereo(const std::vector<float>& samples, int inputChannels, int outputChannels)
 {
@@ -69,12 +80,11 @@ void playAudioFile(const std::string& filePath)
     SNDFILE* sndFile = sf_open(filePath.c_str(), SFM_READ, &sfInfo);
     if (!sndFile)
     {
-        const char* errorMsg = sf_strerror(nullptr);
         std::cerr << "ファイルを開けませんでした。" << std::endl;
 
         switch (sf_error(nullptr))
         {
-        case 18:
+            case 18:
                 std::cerr << "エラー: ファイルには実装されていない形式のデータが含まれています。" << std::endl;
                 break;
 
@@ -107,6 +117,9 @@ void playAudioFile(const std::string& filePath)
     audioData.samples.resize(sfInfo.frames * sfInfo.channels);
     audioData.channels = 2; // 出力はステレオに固定
 
+    double duration = static_cast<double>(sfInfo.frames) / sfInfo.samplerate;
+    getDuration(duration);
+
     // ファイルデータを読み込む
     sf_readf_float(sndFile, audioData.samples.data(), sfInfo.frames);
     const int charSize = 256;
@@ -117,31 +130,31 @@ void playAudioFile(const std::string& filePath)
     if (sf_get_string(sndFile, SF_STR_TITLE))
     {
         strncpy(title, sf_get_string(sndFile, SF_STR_TITLE), charSize);
-        std::cout << "曲名: " << title << std::endl;
+        std::cout << "  曲名: " << title << std::endl;
     }
     else
     {
-        std::cout << "曲名: 不明" << std::endl;
+        std::cout << "  曲名: 不明" << std::endl;
     }
 
     if (sf_get_string(sndFile, SF_STR_ARTIST))
     {
         strncpy(artist, sf_get_string(sndFile, SF_STR_ARTIST), charSize);
-        std::cout << "アーティスト：　" << artist << std::endl;
+        std::cout << "  アーティスト：　" << artist << std::endl;
     }
     else
     {
-        std::cout << "アーティスト：　不明" << std::endl;
+        std::cout << "  アーティスト：　不明" << std::endl;
     }
 
     if (sf_get_string(sndFile, SF_STR_ALBUM))
     {
         strncpy(album, sf_get_string(sndFile, SF_STR_ALBUM), charSize);
-        std::cout << "アルバム：　" << album << std::endl;
+        std::cout << "  アルバム：　" << album <<  std::endl;
     }
     else
     {
-        std::cout << "アルバム：　不明" << std::endl;
+        std::cout << "  アルバム：　不明" << std::endl;
     }
 
     // マルチチャネルオーディオをステレオにダウンミックス
@@ -225,21 +238,23 @@ int main()
             if (entry.is_regular_file())
             {
                 currentFile++;
-                std::cout << "再生開始 : " << currentFile << "\/" << totalFiles << std::endl;
+                std::cout << "再生開始： " << currentFile << "\/" << totalFiles << std::endl;
                 std::string filePath = entry.path().string();
                 std::string fileName = entry.path().filename().string();
 
                 playAudioFile(filePath);
+
+                std::cout << std::endl << "===============" << std::endl << std::endl;
             }
         }
 
-        std::cout << "すべてのファイルの再生が完了しました。" << std::endl;
+        std::cout << "\nすべてのファイルの再生が完了しました。" << std::endl;
 
         return EXIT_SUCCESS;
     }
     catch (const std::exception&)
     {
-        std::cerr << "予期しないエラーが発生しました。" << std::endl;
+        std::cerr << "\n予期しないエラーが発生しました。" << std::endl;
         return EXIT_FAILURE;
     }
 }
