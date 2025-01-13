@@ -70,7 +70,7 @@ void playAudioFile(const std::string& filePath)
     if (!sndFile)
     {
         const char* errorMsg = sf_strerror(nullptr);
-        std::cerr << "ファイルを開けませんでした。 " << std::endl;
+        std::cerr << "ファイルを開けませんでした。" << std::endl;
 
         switch (sf_error(nullptr))
         {
@@ -106,7 +106,7 @@ void playAudioFile(const std::string& filePath)
     AudioData audioData;
     audioData.samples.resize(sfInfo.frames * sfInfo.channels);
     audioData.channels = 2; // 出力はステレオに固定
-    std::cout << sfInfo.samplerate << std::endl;
+
     // ファイルデータを読み込む
     sf_readf_float(sndFile, audioData.samples.data(), sfInfo.frames);
     const int charSize = 256;
