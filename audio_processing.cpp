@@ -14,7 +14,8 @@ struct AudioData {
     int channels = 2; // 出力チャネル数 (stereoにダウンミックス)
 };
 
-void getDuration(double duration) {
+void getDuration(double duration)
+{
     int hours = static_cast<int>(duration) / 3600;
     int minutes = (static_cast<int>(duration) % 3600) / 60;
     int seconds = static_cast<int>(duration) % 60;
@@ -23,6 +24,74 @@ void getDuration(double duration) {
         << std::setw(2) << std::setfill('0') << hours << ":"
         << std::setw(2) << std::setfill('0') << minutes << ":"
         << std::setw(2) << std::setfill('0') << seconds << std::endl;
+}
+
+void displaySndFileError(int errnum)
+{
+    switch (errnum)
+    {
+        case 18:
+            std::cerr << "エラー: ファイルには実装されていない形式のデータが含まれています。" << std::endl;
+            break;
+
+        case SF_ERR_UNSUPPORTED_ENCODING:
+            std::cerr << "エラー: ファイルはサポートされていないエンコーディングを使用しています。" << std::endl;
+            break;
+
+        case SF_ERR_UNRECOGNISED_FORMAT:
+            std::cerr << "エラー: 認識できないファイル形式です。" << std::endl;
+            break;
+
+        case SF_ERR_MALFORMED_FILE:
+            std::cerr << "エラー: ファイルが破損しています。" << std::endl;
+            break;
+
+        case SF_ERR_SYSTEM:
+            std::cerr << "エラー: システムエラーが発生しました。" << std::endl;
+            break;
+
+        default:
+            std::cerr << "エラー: 不明なエラーが発生しました。" << std::endl;
+        break;
+    }
+}
+
+void displayAudioDetails(SNDFILE* sndFile)
+{
+    const int charSize = 256;
+    char artist[charSize];
+    char title[charSize];
+    char album[charSize];
+
+    if (sf_get_string(sndFile, SF_STR_TITLE))
+    {
+        strncpy(title, sf_get_string(sndFile, SF_STR_TITLE), charSize);
+        std::cout << "  曲名: " << title << std::endl;
+    }
+    else
+    {
+        std::cout << "  曲名: 不明" << std::endl;
+    }
+
+    if (sf_get_string(sndFile, SF_STR_ARTIST))
+    {
+        strncpy(artist, sf_get_string(sndFile, SF_STR_ARTIST), charSize);
+        std::cout << "  アーティスト：　" << artist << std::endl;
+    }
+    else
+    {
+        std::cout << "  アーティスト：　不明" << std::endl;
+    }
+
+    if (sf_get_string(sndFile, SF_STR_ALBUM))
+    {
+        strncpy(album, sf_get_string(sndFile, SF_STR_ALBUM), charSize);
+        std::cout << "  アルバム：　" << album << std::endl;
+    }
+    else
+    {
+        std::cout << "  アルバム：　不明" << std::endl;
+    }
 }
 
 // マルチチャネルオーディオをステレオにダウンミックス
@@ -81,34 +150,7 @@ void playAudioFile(const std::string& filePath)
     if (!sndFile)
     {
         std::cerr << "ファイルを開けませんでした。" << std::endl;
-
-        switch (sf_error(nullptr))
-        {
-            case 18:
-                std::cerr << "エラー: ファイルには実装されていない形式のデータが含まれています。" << std::endl;
-                break;
-
-            case SF_ERR_UNSUPPORTED_ENCODING:
-                std::cerr << "エラー: ファイルはサポートされていないエンコーディングを使用しています。" << std::endl;
-                break;
-
-            case SF_ERR_UNRECOGNISED_FORMAT:
-                std::cerr << "エラー: 認識できないファイル形式です。" << std::endl;
-                break;
-
-            case SF_ERR_MALFORMED_FILE:
-                std::cerr << "エラー: ファイルが破損しています。" << std::endl;
-                break;
-
-            case SF_ERR_SYSTEM:
-                std::cerr << "エラー: システムエラーが発生しました。" << std::endl;
-                break;
-
-            default:
-                std::cerr << "エラー: 不明なエラーが発生しました。" << std::endl;
-                break;
-        }
-
+        displaySndFileError(sf_error(nullptr));
         return;
     }
 
@@ -122,40 +164,7 @@ void playAudioFile(const std::string& filePath)
 
     // ファイルデータを読み込む
     sf_readf_float(sndFile, audioData.samples.data(), sfInfo.frames);
-    const int charSize = 256;
-    char artist[charSize];
-    char title[charSize];
-    char album[charSize];
-
-    if (sf_get_string(sndFile, SF_STR_TITLE))
-    {
-        strncpy(title, sf_get_string(sndFile, SF_STR_TITLE), charSize);
-        std::cout << "  曲名: " << title << std::endl;
-    }
-    else
-    {
-        std::cout << "  曲名: 不明" << std::endl;
-    }
-
-    if (sf_get_string(sndFile, SF_STR_ARTIST))
-    {
-        strncpy(artist, sf_get_string(sndFile, SF_STR_ARTIST), charSize);
-        std::cout << "  アーティスト：　" << artist << std::endl;
-    }
-    else
-    {
-        std::cout << "  アーティスト：　不明" << std::endl;
-    }
-
-    if (sf_get_string(sndFile, SF_STR_ALBUM))
-    {
-        strncpy(album, sf_get_string(sndFile, SF_STR_ALBUM), charSize);
-        std::cout << "  アルバム：　" << album <<  std::endl;
-    }
-    else
-    {
-        std::cout << "  アルバム：　不明" << std::endl;
-    }
+    displayAudioDetails(sndFile);
 
     // マルチチャネルオーディオをステレオにダウンミックス
     if (sfInfo.channels > 2)
