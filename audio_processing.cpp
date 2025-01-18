@@ -4,12 +4,17 @@
 #include <filesystem>
 #include <portaudio.h>
 #include <sndfile.h>
+#include <iomanip>
+#include <cstring>
 
 namespace fs = std::filesystem;
 
 // AudioData構造体: オーディオデータと再生状態を保持
 struct AudioData {
-    std::vector<float> samples;
+    SNDFILE* sndFile;
+    SF_INFO sfInfo;
+    std::vector<float> buffer;
+    size_t bufferSize;
     size_t currentFrame = 0;
     int channels = 2; // 出力チャネル数 (stereoにダウンミックス)
 };
@@ -93,22 +98,26 @@ static int audioCallback(const void* inputBuffer, void* outputBuffer,
     auto* data = static_cast<AudioData*>(userData); // ユーザーデータをAudioDataにキャスト
     auto* out = static_cast<float*>(outputBuffer); // 出力バッファ
 
-    for (unsigned long i = 0; i < framesPerBuffer; ++i)
+    // バッファをクリア
+    std::memset(out, 0, framesPerBuffer * data->channels * sizeof(float));
+
+    // ファイルからデータを読み込む
+    sf_count_t framesRead = sf_readf_float(data->sndFile, data->buffer.data(), framesPerBuffer);
+    if (framesRead > 0)
     {
-        for (int channel = 0; channel < data->channels; ++channel)
+        // ダウンミックスが必要な場合
+        if (data->sfInfo.channels > 2)
         {
-            if (data->currentFrame < data->samples.size())
-            {
-                *out++ = data->samples[data->currentFrame++]; // サンプルをコピー
-            }
-            else
-            {
-                *out++ = 0.0f; // データが終了したら無音を出力
-            }
+            std::vector<float> downmixed = downmixToStereo(data->buffer, data->sfInfo.channels, data->channels);
+            std::memcpy(out, downmixed.data(), downmixed.size() * sizeof(float));
+        }
+        else
+        {
+            std::memcpy(out, data->buffer.data(), framesRead * data->channels * sizeof(float));
         }
     }
 
-    return data->currentFrame < data->samples.size() ? paContinue : paComplete;
+    return framesRead > 0 ? paContinue : paComplete;
 }
 
 // オーディオファイルを再生する関数
@@ -125,25 +134,22 @@ void playAudioFile(const std::string& filePath)
 
     // AudioDataを初期化
     AudioData audioData;
-    audioData.samples.resize(sfInfo.frames * sfInfo.channels);
+    audioData.sndFile = sndFile;
+    audioData.sfInfo = sfInfo;
     audioData.channels = 2; // 出力はステレオに固定
+    audioData.bufferSize = 1024 * sfInfo.channels;
+    audioData.buffer.resize(audioData.bufferSize);
 
     double duration = static_cast<double>(sfInfo.frames) / sfInfo.samplerate;
     getDuration(duration);
-
-    // ファイルデータを読み込む
-    sf_readf_float(sndFile, audioData.samples.data(), sfInfo.frames);
     displayAudioDetails(sndFile);
-
-    // マルチチャネルオーディオをステレオにダウンミックス
-    if (sfInfo.channels > 2)
-        audioData.samples = downmixToStereo(audioData.samples, sfInfo.channels, audioData.channels);
 
     // PortAudioを初期化
     PaError err = Pa_Initialize();
     if (err != paNoError)
     {
         std::cerr << "PortAudio初期化エラー: " << Pa_GetErrorText(err) << std::endl;
+        sf_close(sndFile);
         return;
     }
 
@@ -156,6 +162,7 @@ void playAudioFile(const std::string& filePath)
     {
         std::cerr << "PortAudioストリームエラー: " << Pa_GetErrorText(err) << std::endl;
         Pa_Terminate();
+        sf_close(sndFile);
         return;
     }
 
@@ -166,6 +173,7 @@ void playAudioFile(const std::string& filePath)
         std::cerr << "PortAudioストリーム開始エラー: " << Pa_GetErrorText(err) << std::endl;
         Pa_CloseStream(stream);
         Pa_Terminate();
+        sf_close(sndFile);
         return;
     }
 
@@ -204,7 +212,7 @@ int main()
                 totalFiles++;
         }
 
-        if (totalFiles == 0) 
+        if (totalFiles == 0)
         {
             std::cerr << "フォルダーで音声のファイルが存在しません。" << std::endl;
             return EXIT_FAILURE;
