@@ -12,7 +12,7 @@ endif()
 project ("audio_processing")
 
 # このプロジェクトの実行可能ファイルにソースを追加する。
-add_executable (audio_processing "audio_processing.cpp"  "AudioPlayer.h" "AudioPlayer.cpp" "FileHandler.h" "FileHandler.cpp" "Utilities.h" "Utilities.cpp")
+add_executable (audio_processing "audio_processing.cpp"  "audioPlayer.h" "audioPlayer.cpp" "fileHandler.h" "fileHandler.cpp" "utilities.h" "utilities.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET audio_processing PROPERTY CXX_STANDARD 17)
