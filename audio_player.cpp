@@ -1,9 +1,9 @@
-#include "AudioPlayer.h"
+#include "audio_player.h"
 #include "Utilities.h"
 #include <iostream>
 #include <cstring>
 
-int AudioPlayer::audioCallback(const void* inputBuffer, void* outputBuffer,
+int audio_player::audioCallback(const void* inputBuffer, void* outputBuffer,
     unsigned long framesPerBuffer,
     const PaStreamCallbackTimeInfo* timeInfo,
     PaStreamCallbackFlags statusFlags,
@@ -19,7 +19,7 @@ int AudioPlayer::audioCallback(const void* inputBuffer, void* outputBuffer,
     {
         if (data->sfInfo.channels > 2)
         {
-            std::vector<float> downmixed = Utilities::downmixToStereo(data->buffer, data->sfInfo.channels, data->channels);
+            std::vector<float> downmixed = utilities::downmixToStereo(data->buffer, data->sfInfo.channels, data->channels);
             std::memcpy(out, downmixed.data(), downmixed.size() * sizeof(float));
         }
         else
@@ -31,7 +31,7 @@ int AudioPlayer::audioCallback(const void* inputBuffer, void* outputBuffer,
     return framesRead > 0 ? paContinue : paComplete;
 }
 
-void AudioPlayer::playAudioFile(const std::string& filePath)
+void audio_player::playAudioFile(const std::string& filePath)
 {
     SF_INFO sfInfo{};
     SNDFILE* sndFile = sf_open(filePath.c_str(), SFM_READ, &sfInfo);
@@ -48,8 +48,8 @@ void AudioPlayer::playAudioFile(const std::string& filePath)
     audioData.bufferSize = 1024 * sfInfo.channels;
     audioData.buffer.resize(audioData.bufferSize);
 
-    Utilities::getDuration(static_cast<double>(sfInfo.frames) / sfInfo.samplerate);
-    Utilities::displayAudioDetails(sndFile);
+    utilities::getDuration(static_cast<double>(sfInfo.frames) / sfInfo.samplerate);
+    utilities::displayAudioDetails(sndFile);
 
     PaError err = Pa_Initialize();
     if (err != paNoError)

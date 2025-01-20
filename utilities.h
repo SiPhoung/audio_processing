@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-namespace Utilities {
+namespace utilities {
     void getDuration(double duration);
     void displayAudioDetails(SNDFILE* sndFile);
     std::vector<float> downmixToStereo(const std::vector<float>& samples, int inputChannels, int outputChannels);

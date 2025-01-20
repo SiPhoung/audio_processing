@@ -3,7 +3,7 @@
 #include <iomanip>
 #include <cstring>
 
-void Utilities::getDuration(double duration)
+void utilities::getDuration(double duration)
 {
     int hours = static_cast<int>(duration) / 3600;
     int minutes = (static_cast<int>(duration) % 3600) / 60;
@@ -15,7 +15,7 @@ void Utilities::getDuration(double duration)
         << std::setw(2) << std::setfill('0') << seconds << std::endl;
 }
 
-void Utilities::displayAudioDetails(SNDFILE* sndFile)
+void utilities::displayAudioDetails(SNDFILE* sndFile)
 {
     const int charSize = 256;
     char artist[charSize];
@@ -54,7 +54,7 @@ void Utilities::displayAudioDetails(SNDFILE* sndFile)
 }
 
 // すべての入力チャネルを左と右のチャネルに均等にミックス
-std::vector<float> Utilities::downmixToStereo(const std::vector<float>& samples, int inputChannels, int outputChannels)
+std::vector<float> utilities::downmixToStereo(const std::vector<float>& samples, int inputChannels, int outputChannels)
 {
     size_t totalFrames = samples.size() / inputChannels;
     std::vector<float> downmixedSamples(totalFrames * outputChannels, 0.0f);

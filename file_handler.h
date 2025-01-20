@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <string>
 
-namespace FileHandler {
+namespace file_handler {
     bool directoryExists(const std::string& path);
     size_t countFilesInDirectory(const std::string& path);
 }

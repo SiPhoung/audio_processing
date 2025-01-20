@@ -15,7 +15,7 @@ struct AudioData {
     int channels = 2; // 出力チャネル数 (stereoにダウンミックス)
 };
 
-namespace AudioPlayer {
+namespace audio_player {
     int audioCallback(const void* inputBuffer, void* outputBuffer,
         unsigned long framesPerBuffer,
         const PaStreamCallbackTimeInfo* timeInfo,

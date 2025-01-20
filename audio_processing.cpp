@@ -1,7 +1,7 @@
 ﻿#include <iostream>
 #include <filesystem>
-#include "AudioPlayer.h"
-#include "FileHandler.h"
+#include "audio_player.h"
+#include "file_handler.h"
 
 namespace fs = std::filesystem;
 
@@ -11,13 +11,13 @@ int main()
     {
         std::string folderPath = std::string(Audio_DIR);
 
-        if (!FileHandler::directoryExists(folderPath))
+        if (!file_handler::directoryExists(folderPath))
         {
             std::cerr << "フォルダーが見つかりません: " << folderPath << std::endl;
             return EXIT_FAILURE;
         }
 
-        size_t totalFiles = FileHandler::countFilesInDirectory(folderPath);
+        size_t totalFiles = file_handler::countFilesInDirectory(folderPath);
         if (totalFiles == 0)
         {
             std::cerr << "フォルダーで音声のファイルが存在しません。" << std::endl;
@@ -33,7 +33,7 @@ int main()
                 std::cout << "再生開始： " << currentFile << "\/" << totalFiles << std::endl;
                 std::string filePath = entry.path().string();
 
-                AudioPlayer::playAudioFile(filePath);
+                audio_player::playAudioFile(filePath);
 
                 std::cout << std::endl << "===============" << std::endl << std::endl;
             }
